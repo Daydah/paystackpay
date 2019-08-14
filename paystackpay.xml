@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension version="1.6" method="upgrade" type="plugin" group="payperdownloadplus">
+	<name>PayperDownloadPlus - PaystackPay</name>
+	<version>1.0</version>
+	<creationDate>Aug 2019</creationDate>
+	<author>Daydah Adeniyi</author>
+	<authorUrl>www.jibitech.com</authorUrl>
+	<description>Plugin for Pay per download Plus component to use Paystack Payment Gateway</description>
+	<license>GNU GPL</license>
+	<languages>
+		<language tag="en-GB">en-GB.plg_payperdownloadplus_paystackpay.ini</language>
+	</languages>
+	<files>
+		<filename plugin="paystackpay">paystackpay.php</filename>
+	</files>
+	<config>
+		<fields name="params">
+			<fieldset name="basic">
+				<field name="ppdp_test_public_key" type="text" size="80"
+						label="COM_PAYSTACKPAY_TEST_PUBLIC_KEY"
+						description="COM_PAYSTACKPAY_TEST_PUBLIC_KEY_DESC"
+						default=""/>
+				<field name="ppdp_test_secret_key" type="text" size="80"
+						label="COM_PAYSTACKPAY_TEST_SECRET_KEY"
+						description="COM_PAYSTACKPAY_TEST_SECRET_KEY_DESC"
+						default=""/>
+				<field name="ppdp_live_public_key" type="text" size="80"
+								label="COM_PAYSTACKPAY_LIVE_PUBLIC_KEY"
+								description="COM_PAYSTACKPAY_LIVE_PUBLIC_KEY_DESC"
+								default=""/>
+				<field name="ppdp_live_secret_key" type="text" size="80"
+								label="COM_PAYSTACKPAY_LIVE_SECRET_KEY"
+								description="COM_PAYSTACKPAY_LIVE_SECRET_KEY_DESC"
+								default=""/>
+				<field name="ppdp_test_mode" type="list" label="COM_PAYSTACKPAY_PAYMENT_MODE" description="COM_PAYSTACKPAY_PAYMENT_MODE_DESC">
+								<option value="0">Test Mode</option>
+								<option value="1">Live Mode</option>
+				</field>
+				<field type="spacer" />
+				<field name="paystack_extra_yes_no" type="radio" class="btn-group btn-group-yesno" default="0" label="COM_PAYSTACKPAY_EXTRA_YESNO" description="COM_PAYSTACKPAY_EXTRA_YESNO_DESC">
+					<option value="1">Yes</option>
+					<option value="0">No</option>
+				</field>
+				<field type="spacer" />
+				<field name="paystack_extra_type" type="radio" class="btn-group btn-group-yesno" default="0" label="COM_PAYSTACKPAY_EXTRA_TYPE" description="COM_PAYSTACKPAY_EXTRACHARGESDESC">
+					<option value="0">Percentage</option>
+					<option value="1">Fixed Amount</option>
+				</field>
+				<field type="spacer" />
+				<field type="text" name="paystack_extra_charges_value" description="COM_PAYSTACKPAY_EXTRACHARGE_VALUEDESC" default="1.5" label="COM_PAYSTACKPAY_EXTRA_VALUE" size="30"/>
+				<field type="spacer" />
+				<field type="text" name="paystack_currcode" description="COM_PAYSTACKPAY_CURR_DESC" default="NGN" label="COM_PAYSTACKPAY_CURR" size="3" />
+			</fieldset>
+		</fields>
+	</config>
+</extension>

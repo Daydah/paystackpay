@@ -204,6 +204,7 @@ class plgPayperDownloadPlusPaystackPay extends JPlugin
 						$validate_response = "VERIFIED";
 						$response = json_encode($transData);
 						$payerEmail = $transData->customer->email;
+						if(!$payerEmail){ $payerEmail = $theuser->email;}
 				    }
 					else if (property_exists($transData, 'error') || ($transData->status === 'failed'))
 		 		 {

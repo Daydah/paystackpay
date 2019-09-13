@@ -12,6 +12,39 @@ require_once (JPATH_ADMINISTRATOR . "/components/com_payperdownload/classes/debu
 // import the JPlugin class
 jimport('joomla.event.plugin');
 
+
+// Add a prefix to this class name to avoid conflict with other plugins
+class joomla_pp_paystack_plugin_tracker {
+    var $public_key;
+    var $plugin_name;
+    function __construct($plugin, $pk){
+        //configure plugin name
+        //configure public key
+        $this->plugin_name = $plugin;
+        $this->public_key = $pk;
+    }
+   
+    function log_transaction_success($trx_ref){
+        //send reference to logger along with plugin name and public key
+        $url = "https://plugin-tracker.paystackintegrations.com/log/charge_success";
+        $fields = [
+            'plugin_name'  => $this->plugin_name,
+            'transaction_reference' => $trx_ref,
+            'public_key' => $this->public_key
+        ];
+        $fields_string = http_build_query($fields);
+        $ch = curl_init();
+        curl_setopt($ch,CURLOPT_URL, $url);
+        curl_setopt($ch,CURLOPT_POST, true);
+        curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true); 
+        //execute post
+        $result = curl_exec($ch);
+        //  echo $result;
+    }
+}
+
+
 class plgPayperDownloadPlusPaystackPay extends JPlugin
 {
 	public function __construct(&$subject, $config = array())
@@ -97,19 +130,14 @@ class plgPayperDownloadPlusPaystackPay extends JPlugin
 		$tosend .= 'metadata: {
 				 "ecommerce_platform":"Joomla 3",
 				 "payment_plugin": "Paystackpay for PayPerDownload",
-				 "author": "Daydah",';
-				/*	 custom_fields: [
+				 "author": "Daydah",
+					 custom_fields: [
 						 {
-							 display_name: "Ecommerce Platform",
-							 variable_name: "ecommerce_platform",
-							 value: "Joomla 3"
-						 }
-						 {
-							 display_name: "Payment plugin",
-							 variable_name: "payment_plugin",
+							 display_name: "Plugin",
+							 variable_name: "plugin",
 							 value: "Paystackpay for PayPerDownload"
 						 }
-					] */
+					] ';
 					$tosend .=
 						'	 },
 			 callback: function(response){
@@ -173,6 +201,7 @@ class plgPayperDownloadPlusPaystackPay extends JPlugin
 			$pmntinfo1 = $this->getPaystackPaymentInfo();
 
 			$secret_key = $pmntinfo1->secret_key;
+			$public_key = $pmntinfo1->public_key;
 			if($secret_key && $thetransactionid)
 			{
 				try
@@ -195,6 +224,14 @@ class plgPayperDownloadPlusPaystackPay extends JPlugin
 						 (strpos($transData->reference, $thetransactionid) === 0)
 						 )
 					{
+
+						//pstk-logger
+						$pstk_logger = new joomla_pp_paystack_plugin_tracker('Paystackpay for PayPerDownload', $public_key);
+						$pstk_logger->log_transaction_success($sentreference);
+						//-------------
+
+
+						
 						// Update order status - From pending to complete
 						$amount = $amount;// / 100.0;
 						$payed = true;

@@ -23,7 +23,7 @@ class joomla_pp_paystack_plugin_tracker {
         $this->plugin_name = $plugin;
         $this->public_key = $pk;
     }
-   
+
     function log_transaction_success($trx_ref){
         //send reference to logger along with plugin name and public key
         $url = "https://plugin-tracker.paystackintegrations.com/log/charge_success";
@@ -37,7 +37,7 @@ class joomla_pp_paystack_plugin_tracker {
         curl_setopt($ch,CURLOPT_URL, $url);
         curl_setopt($ch,CURLOPT_POST, true);
         curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
-        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true); 
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
         //execute post
         $result = curl_exec($ch);
         //  echo $result;
@@ -80,7 +80,7 @@ class plgPayperDownloadPlusPaystackPay extends JPlugin
 				if($resource)
 				{
 					$damount = $resource->resource_price;
-					$currency = $pmntinfo->currency; //$currency = $resource->resource_price_currency;
+					$currency = $resource->resource_price_currency; //$currency = $pmntinfo->currency;
 					$item_id = $resource->resource_license_id;
 					$name = $resource->resource_name;
 					$download_id = $resource->download_id;
@@ -94,7 +94,7 @@ class plgPayperDownloadPlusPaystackPay extends JPlugin
 				else
 				{
 					$damount = $license->price;
-					$currency = $pmntinfo->currency; //$currency = $license->currency_code;
+					$currency = $license->currency_code; //$currency = $pmntinfo->currency;
 					$item_id = $license->license_id;
 					$name = $license->license_name;
 					$description = $license->description;
@@ -231,7 +231,7 @@ class plgPayperDownloadPlusPaystackPay extends JPlugin
 						//-------------
 
 
-						
+
 						// Update order status - From pending to complete
 						$amount = $amount;// / 100.0;
 						$payed = true;
@@ -405,7 +405,7 @@ public function getPaystackPaymentInfo()
 	$pddpinfo->ps_extratype = $this->params->get('paystack_extra_type');
 	$pddpinfo->ps_extraval = $this->params->get('paystack_extra_charges_value');
 
-	$pddpinfo->currency = $this->params['paystack_currcode'];
+	//$pddpinfo->currency = $this->params['paystack_currcode'];
 	return $pddpinfo;
 }
 

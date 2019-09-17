@@ -22,5 +22,8 @@ After successful installation, open the plugin by going to Extensions > Plugin, 
 - Open the PPD component configuration by going to Components > Pay Per Download > Configuration.
 - On the "Gateway Settings" tab, set "Use PayPal" to NO, "Use Payment Gateway Plugin" to YES.
 
-### Current Constraints
-- Nigerian NGN currency code is not in the PPD component by default. I had to add Currency Code manually to PPD (see how to [here](http://www.ratmilwebsolutions.com/forum/4-payperdownload-support/2545-how-to-add-new-currency.html) ). I had to also add a field for capturing currency code in the payment plugin because of this. I hope I can remove the field in later versions.
+### Constraints
+- (In version 1.0): Nigerian NGN currency code is not in the PPD component by default. I had to add Currency Code manually to PPD (see how to [here](http://www.ratmilwebsolutions.com/forum/4-payperdownload-support/2545-how-to-add-new-currency.html) ). I had to also add a field for capturing currency code in the payment plugin because of this. I hope I can remove the field in later versions.
+
+## Update
+- (In version 1.1): The PayPerDownload plugin version 6.1.0 now factors in a dropdown for you to select your currency. This plugin has been updated to reflect that upgrade (Thanks Olivier and Ratmil!).

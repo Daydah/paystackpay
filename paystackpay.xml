@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <extension version="1.6" method="upgrade" type="plugin" group="payperdownloadplus">
 	<name>PayperDownloadPlus - PaystackPay</name>
-	<version>1.0</version>
+	<version>1.1</version>
 	<creationDate>Aug 2019</creationDate>
 	<author>Daydah Adeniyi</author>
 	<authorUrl>www.jibitech.com</authorUrl>
@@ -48,8 +48,8 @@
 				</field>
 				<field type="spacer" />
 				<field type="text" name="paystack_extra_charges_value" description="COM_PAYSTACKPAY_EXTRACHARGE_VALUEDESC" default="1.5" label="COM_PAYSTACKPAY_EXTRA_VALUE" size="30"/>
-				<field type="spacer" />
-				<field type="text" name="paystack_currcode" description="COM_PAYSTACKPAY_CURR_DESC" default="NGN" label="COM_PAYSTACKPAY_CURR" size="3" />
+		<!--		<field type="spacer" />
+				<field type="text" name="paystack_currcode" description="COM_PAYSTACKPAY_CURR_DESC" default="NGN" label="COM_PAYSTACKPAY_CURR" size="3" /> -->
 			</fieldset>
 		</fields>
 	</config>

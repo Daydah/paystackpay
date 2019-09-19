@@ -1,34 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<extension version="1.6" method="upgrade" type="plugin" group="payperdownloadplus">
-	<name>PayperDownloadPlus - PaystackPay</name>
-	<version>1.1</version>
+<extension version="3.1" method="upgrade" type="plugin" group="payperdownloadplus">
+	<name>PLG_PAYPERDOWNLOADPLUS_PAYSTACKPAY</name>
+	<version>1.2.0</version>
 	<creationDate>Aug 2019</creationDate>
 	<author>Daydah Adeniyi</author>
 	<authorUrl>www.jibitech.com</authorUrl>
-	<description>Plugin for Pay per download Plus component to use Paystack Payment Gateway</description>
-	<license>GNU GPL</license>
+	<description>PLG_PAYPERDOWNLOADPLUS_PAYSTACKPAY_XML_DESCRIPTION</description>
+	<license>GNU General Public License version 3 or later; see LICENSE</license>
 	<languages>
 		<language tag="en-GB">en-GB.plg_payperdownloadplus_paystackpay.ini</language>
+		<language tag="en-GB">en-GB.plg_payperdownloadplus_paystackpay.sys.ini</language>
 	</languages>
 	<files>
 		<filename plugin="paystackpay">paystackpay.php</filename>
+		<filename>index.html</filename>
+		<filename>license</filename>
+		<folder>images</folder>
+		<folder>tmpl</folder>
 	</files>
 	<config>
 		<fields name="params">
 			<fieldset name="basic">
-				<field name="ppdp_test_public_key" type="text" size="80"
+				<field name="ppdp_test_public_key" type="text" size="80" class="input-xxlarge"
 						label="COM_PAYSTACKPAY_TEST_PUBLIC_KEY"
 						description="COM_PAYSTACKPAY_TEST_PUBLIC_KEY_DESC"
 						default=""/>
-				<field name="ppdp_test_secret_key" type="text" size="80"
+				<field name="ppdp_test_secret_key" type="text" size="80" class="input-xxlarge"
 						label="COM_PAYSTACKPAY_TEST_SECRET_KEY"
 						description="COM_PAYSTACKPAY_TEST_SECRET_KEY_DESC"
 						default=""/>
-				<field name="ppdp_live_public_key" type="text" size="80"
+				<field name="ppdp_live_public_key" type="text" size="80" class="input-xxlarge"
 								label="COM_PAYSTACKPAY_LIVE_PUBLIC_KEY"
 								description="COM_PAYSTACKPAY_LIVE_PUBLIC_KEY_DESC"
 								default=""/>
-				<field name="ppdp_live_secret_key" type="text" size="80"
+				<field name="ppdp_live_secret_key" type="text" size="80" class="input-xxlarge"
 								label="COM_PAYSTACKPAY_LIVE_SECRET_KEY"
 								description="COM_PAYSTACKPAY_LIVE_SECRET_KEY_DESC"
 								default=""/>

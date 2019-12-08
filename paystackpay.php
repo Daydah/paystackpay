@@ -188,7 +188,7 @@ JS;
    	       	echo '<input type="hidden" name="item_id" value="'.htmlentities($item_id).'"/>';
    	       	echo '<input type="hidden" name="item_type" value="'.htmlentities($type).'"/>';
    	       	echo '<input type="hidden" name="user_id" value="'.htmlentities($user_id).'"/>';
-   	       	echo '<input type="hidden" name="amount" value="'.htmlentities($damount).'"/>';
+   	       	echo '<input type="hidden" name="amount" value="'.htmlentities($package_price[0]).'"/>'; // damount + possible reversal fee before x100
    	       	echo '<input type="hidden" name="tax" value="'.htmlentities($tax).'"/>';
    	       	echo '<input type="hidden" name="currency" value="'.htmlentities($currency).'"/>';
 

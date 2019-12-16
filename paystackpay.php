@@ -44,9 +44,10 @@ class joomla_pp_paystack_plugin_tracker {
     }
 }
 
-
 class plgPayperDownloadPlusPaystackPay extends JPlugin
 {
+	protected static $tax_percentage;
+
 	public function __construct(&$subject, $config = array())
     {
         parent::__construct($subject, $config);
@@ -54,159 +55,168 @@ class plgPayperDownloadPlusPaystackPay extends JPlugin
         $this->loadLanguage();
 	}
 
-	public function onRenderPaymentForm($user, $license, $resource,
-		$returnUrl, $thankyouUrl)
+	public function onRenderPaymentForm($user, $license, $resource, $returnUrl, $thankyouUrl)
 	{
-		$siteUrl = JUri::base(); $package_price = array();
-		$theuser = JFactory::getUser();
 		$pmntinfo = $this->getPaystackPaymentInfo();
 		$public_key = $pmntinfo->public_key;
 
-		$user_id = 0;
-		if($user)
-		{
-				$user_id = $user->id; $customer_email = $user->email;
-				$thename = explode(" ",$user->name); $firstname = $thename[0];
-			//	if(count($thename) > 1){$lastname = $thename[1];}
-			}
-			else{
-				$user_id = $theuser->id; $customer_email = $theuser->email;
-				$thename = explode(" ",$theuser->name); $firstname = $thename[0];
-			}
-		if($public_key && $customer_email)
+		if (empty($public_key)) {
+			echo JText::_('PLG_PAYPERDOWNLOADPLUS_PAYSTACKPAY_MISSINGPUBLICKEY');
+			return;
+		}
+
+		$secret_key = $pmntinfo->secret_key;
+
+		if (empty($secret_key)) {
+			echo JText::_('PLG_PAYPERDOWNLOADPLUS_PAYSTACKPAY_MISSINGSECRETKEY');
+			return;
+		}
+
+		if (!isset($user)) {
+			echo JText::_('PLG_PAYPERDOWNLOADPLUS_PAYSTACKPAY_USERMUSTBELOGGEDIN');
+			return;
+		}
+
+		$user_id = $user->id;
+		$customer_email = $user->email;
+// 		$thename = explode(" ",$user->name);
+// 		$firstname = $thename[0]; // that's a leap of faith
+// 		if (count($thename) > 1) {
+// 			$lastname = $thename[1];
+// 		}
+
+		if($license || $resource)
 		{
 			$item_id = 0;	$name = ""; $damount = 0; $currency = ""; $description = "";
-			$type = ""; $task = ""; $download_id = 0; $amount = 0;
-			if($license || $resource)
+			$type = ""; $task = ""; $download_id = ''; $amount = 0;
+
+			if($resource)
 			{
-				if($resource)
-				{
-					$damount = $resource->resource_price;
-					$currency = $resource->resource_price_currency; //$currency = $pmntinfo->currency;
-					$item_id = $resource->resource_license_id;
-					$name = $resource->resource_name;
-					$download_id = $resource->download_id;
-					if($resource->alternate_resource_description)
-						$description = $resource->alternate_resource_description;
-					else
-						$description = $resource->resource_description;
-					$task = "confirmres";
-					$type = "resource";
-				}
+				$damount = $resource->resource_price;
+				$currency = $resource->resource_price_currency;
+				$item_id = $resource->resource_license_id;
+				$name = $resource->resource_name;
+				$download_id = $resource->download_id;
+				if($resource->alternate_resource_description)
+					$description = $resource->alternate_resource_description;
 				else
-				{
-					$damount = $license->price;
-					$currency = $license->currency_code; //$currency = $pmntinfo->currency;
-					$item_id = $license->license_id;
-					$name = $license->license_name;
-					$description = $license->description;
-					$task = "confirm";
-					$type = "license";
-				}
-				$package_price = $this->calcFinalAmount($damount, $pmntinfo->ps_extra, $pmntinfo->ps_extratype, $pmntinfo->ps_extraval);
-				$amount = $package_price[0] * 100;
-				$amount = (int)$amount;
-				$returnBase64Coded =  base64_encode($returnUrl);
-
-				$callbackurl = JURI::root() . 'index.php?option=com_payperdownload&amp;gateway=paystack&amp;task=' . $task;
-				$callbackurl .= '&item_id=' . htmlentities($item_id);
-				$callbackurl .= '&item_type=' . $type;
-				$callbackurl .= '&user_id=' . htmlentities($user_id);
-				$callbackurl .= '&amount=' . htmlentities($damount);
-				$callbackurl .= '&currency=' . htmlentities($currency);
-				$callbackurl .= '&r=' . htmlentities($returnBase64Coded);
-
-				if ($thankyouUrl) {
-				    $returnParams = '';
-				    if ($type == 'license') {
-				        if (strstr($thankyouUrl, "?") === false) {
-				            $returnParams = '?lid=' . (int)$license->license_id;
-				        } else {
-				            $returnParams = '&lid=' . (int)$license->license_id;
-				        }
-				    }
-				    $callbackurl .= '&redirect=' . htmlentities(base64_encode($thankyouUrl . $returnParams));
-				}
-
-				if ($download_id) {
-				    $callbackurl .= '&download_id=' . (int)$download_id;
-				}
-
-				$the_reference = 'ppdp'.floor(mt_rand()*10 + 1);//''+Math.floor((Math.random() * 1000000000) + 1);
-				//put the reference in a session
-    	       	$session = JFactory::getSession();
-    	       	$session->set('session_transaction_id',$the_reference); //dump($the_reference,"the created reference");
-
-                //construct the variable containing the form
-
-    	       	JFactory::getDocument()->addScript('https://js.paystack.co/v1/inline.js');
-
-    	       	if (count($thename) > 1) {
-    	       	    $lastname = $thename[1];
-    	       	}
-
-    	       	$js_declaration = <<< JS
-                    function payWithPaystack() {
-                        var handler = PaystackPop.setup({
-                            key: "$public_key",
-                            email: "$customer_email",
-                            amount: "$amount",
-                            ref: "$the_reference",
-                            currency: "$currency",
-                            firstname: "$firstname",
-                            lastname: "$lastname",
-                            metadata: {
-                                "ecommerce_platform":"Joomla 3",
-                                "payment_plugin": "Paystackpay for PayPerDownload",
-                                "author": "Daydah",
-                                custom_fields: [
-                                    {
-                                        display_name: "Plugin",
-                                        variable_name: "plugin",
-                                        value: "Paystackpay for PayPerDownload"
-                                    }
-                                ]
-                            },
-                            callback: function(response){
-                                document.getElementById("paystack-payment_form").submit();
-                            },
-                            onClose: function(){
-                                /* cancelling by the buyer */
-                            }
-                        });
-                        handler.openIframe();
-                    }
-
-                    window.addEventListener('load', function() {
-                        document.querySelector('#paystack-pay-btn').addEventListener('click', function () {
-                            payWithPaystack();
-                        });
-                    }, false);
-JS;
-    	       	JFactory::getDocument()->addScriptDeclaration($js_declaration);
-
-                //$tosend ='<div class="payment-heading">'.$redirectHeading.'</div>';
-    	       	echo '<form method="post" action="'.$callbackurl.'" name="paystack-payment_form" id="paystack-payment_form">';
-
-    	       	echo $this->_loadTemplate('default.php');
-
-                //add the hidden form fields too
-    	       	echo '<input type="hidden" name="item_id" value="'.htmlentities($item_id).'"/>';
-    	       	echo '<input type="hidden" name="item_type" value="'.htmlentities($type).'"/>';
-    	       	echo '<input type="hidden" name="user_id" value="'.htmlentities($user_id).'"/>';
-    	       	echo '<input type="hidden" name="damount" value="'.htmlentities($damount).'"/>';
-    	       	echo '<input type="hidden" name="currency" value="'.htmlentities($currency).'"/>';
-    	       	echo '<input type="hidden" name="r" value="'.htmlentities($returnBase64Coded).'"/>';
-    	       	echo '<input type="hidden" name="redirect" value="'.htmlentities($returnBase64Coded).'"/>';
-    	       	echo '<input type="hidden" name="the-fee" value="'.htmlentities($package_price[1]).'"/>';
-
-    			if($download_id)
-    			{
-    			    echo '<input type="hidden" name="download_id" value="'.(int)$download_id.'/>';
-    			}
-
-    			echo '</form>';
+					$description = $resource->resource_description;
+				$task = "confirmres";
+				$type = "resource";
 			}
+			else
+			{
+				$damount = $license->price;
+				$currency = $license->currency_code;
+				$item_id = $license->license_id;
+				$name = $license->license_name;
+				$description = $license->description;
+				$task = "confirm";
+				$type = "license";
+			}
+
+			$tax = 0;
+			$tax_percentage = $this->_getTaxPercentage();
+			if ($tax_percentage > 0) {
+				$tax = round($damount * $tax_percentage / 100, 2);
+				$damount = $damount + $tax;
+			}
+
+			// apply the tax before or after the additonnal fee ?
+
+			$package_price = $this->calcFinalAmount($damount, $pmntinfo->ps_extra, $pmntinfo->ps_extratype, $pmntinfo->ps_extraval);
+			$amount = $package_price[0] * 100;
+			$amount = (int)$amount;
+
+ 			$callbackurl = JURI::root() . 'index.php?option=com_payperdownload&amp;gateway=paystack&amp;task=' . $task;
+
+			$the_reference = 'ppdp'.floor(mt_rand()*10 + 1);//''+Math.floor((Math.random() * 1000000000) + 1);
+			//put the reference in a session
+   	       	$session = JFactory::getSession();
+   	       	$session->set('session_transaction_id',$the_reference); //dump($the_reference,"the created reference");
+
+            //construct the variable containing the form
+
+  	       	JFactory::getDocument()->addScript('https://js.paystack.co/v1/inline.js');
+
+   	       	$js_declaration = <<< JS
+                function payWithPaystack() {
+                    var handler = PaystackPop.setup({
+                        key: "$public_key",
+                        email: "$customer_email",
+                        amount: "$amount",
+                        ref: "$the_reference",
+                        currency: "$currency",
+                        metadata: {
+                            "ecommerce_platform":"Joomla 3",
+                            "payment_plugin": "Paystackpay for PayPerDownload",
+                            "author": "Daydah",
+                            custom_fields: [
+                                {
+                                    display_name: "Plugin",
+                                    variable_name: "plugin",
+                                    value: "Paystackpay for PayPerDownload"
+                                }
+                            ]
+                        },
+                        callback: function(response){
+                            document.getElementById("paystack-payment_form").submit();
+                        },
+                        onClose: function(){
+                            /* cancelling by the buyer */
+                        }
+                    });
+                    handler.openIframe();
+                }
+
+                window.addEventListener('load', function() {
+                    document.querySelector('#paystack-pay-btn').addEventListener('click', function () {
+                        payWithPaystack();
+                    });
+                }, false);
+JS;
+   	       	JFactory::getDocument()->addScriptDeclaration($js_declaration);
+
+   	       	echo '<div class="gateway">';
+
+  	       	echo '<form method="post" action="'.$callbackurl.'" name="paystack-payment_form" id="paystack-payment_form">';
+
+  	       	$variables = array('additional_fee' => $package_price[1], 'currency' => $currency);
+  	       	echo $this->_loadTemplate('default.php', $variables);
+
+            //add the hidden form fields too
+   	       	echo '<input type="hidden" name="item_id" value="'.htmlentities($item_id).'"/>';
+   	       	echo '<input type="hidden" name="item_type" value="'.htmlentities($type).'"/>';
+   	       	echo '<input type="hidden" name="user_id" value="'.htmlentities($user_id).'"/>';
+   	       	echo '<input type="hidden" name="amount" value="'.htmlentities($package_price[0]).'"/>'; // damount + possible reversal fee before x100
+   	       	echo '<input type="hidden" name="tax" value="'.htmlentities($tax).'"/>';
+   	       	echo '<input type="hidden" name="currency" value="'.htmlentities($currency).'"/>';
+
+   	       	if ($type == 'resource') {
+   	       		echo '<input type="hidden" name="r" value="'.htmlentities(base64_encode($returnUrl)).'"/>';
+   	       	}
+
+   	       	if ($thankyouUrl) {
+   	       		$returnParams = '';
+   	       		if ($type == 'license') {
+   	       			if (strstr($thankyouUrl, "?") === false) {
+   	       				$returnParams = '?lid=' . (int)$license->license_id;
+   	       			} else {
+   	       				$returnParams = '&lid=' . (int)$license->license_id;
+   	       			}
+   	       		}
+   	       		echo '<input type="hidden" name="redirect" value="'.htmlentities(base64_encode($thankyouUrl . $returnParams)).'"/>';
+   	       	}
+
+   	       	//echo '<input type="hidden" name="the-fee" value="'.htmlentities($package_price[1]).'"/>';
+
+   	       	if ($download_id) {
+   			    echo '<input type="hidden" name="download_id" value="'.(int)$download_id.'/>';
+   			}
+
+   			echo '</form>';
+
+   			echo '</div>';
 		}
 	}
 
@@ -221,7 +231,7 @@ JS;
 
 			$dealt = true;
 			$payed = false;
-			$amount = $jinput->getInt('damount');
+			$amount = $jinput->getFloat('amount');
 			$currency = $jinput->getString('currency');
 			$user_id = $jinput->getInt("user_id");
 			$item_type = $jinput->getString("item_type");
@@ -229,19 +239,24 @@ JS;
 			$download_id = $jinput->getInt("download_id");
 			$license_id = 0;
 			$resource_id = 0;
-			$tax = 0;
-			if($item_type == "resource")
-				{$resource_id = $item_id;}
-			else
-				{$license_id = $item_id;}
-				$session = JFactory::getSession();
+			$tax = $jinput->getFloat('tax', 0);
+			$fee = 0; // $jinput->getFloat('the-fee', 0);
+
+			if ($item_type == 'resource') {
+				$resource_id = $item_id;
+			} else {
+				$license_id = $item_id;
+			}
+
+			$session = JFactory::getSession();
 			$thetransactionid = $session->get('session_transaction_id');
 
-			$pmntinfo1 = $this->getPaystackPaymentInfo();
+			$pmntinfo = $this->getPaystackPaymentInfo();
 
-			$secret_key = $pmntinfo1->secret_key;
-			$public_key = $pmntinfo1->public_key;
-			if($secret_key && $thetransactionid)
+			$secret_key = $pmntinfo->secret_key;
+			$public_key = $pmntinfo->public_key;
+
+			if($thetransactionid)
 			{
 				try
 				{
@@ -272,21 +287,22 @@ JS;
 
 
 						// Update order status - From pending to complete
-						$amount = $amount;// / 100.0;
+
 						$payed = true;
 						$transactionId = $sentreference;
-						$fee = $jinput->getInt('the-fee');
+
+						$fee = $transData->fees / 100.0;
+
 						$status = "COMPLETED";
 						$validate_response = "VERIFIED";
 						$response = json_encode($transData);
 						$payerEmail = $transData->customer->email;
-						if(!$payerEmail){ $payerEmail = $theuser->email;}
 				    }
 				    else if (property_exists($transData, 'error') || (property_exists($transData, 'status') && $transData->status === 'failed'))
-		 		 {
-					 $status = "FAILED";
- 					 $response = $transData->gateway_response;
-				 }
+					{
+						$status = "FAILED";
+						$response = $transData->gateway_response;
+					}
 
 					if($download_id)
 					{
@@ -343,7 +359,7 @@ JS;
 			if($extratype == 0){
 				//then the type is a percentage
 				//calculate percentage value
-				$dextra = ($extraval * $initialval)/100;
+				$dextra = round(($extraval * $initialval)/100, 2);
 				$finvalue = $initialval + $dextra;
 			}
 			else{//then the type is a fixed amount
@@ -358,50 +374,50 @@ JS;
 	/*
 	 * @param string $secret_key is either the demo or live secret key from your dashboard. $transactionid is the transaction reference code sent to the API previously
 	 */
+	public function verifyPaystackTransaction($transactionid, $secret_key)
+	{
+		$transactionStatus  = new stdClass();
+		$transactionStatus->error = "";
 
-     public function verifyPaystackTransaction($transactionid, $secret_key)
-     {
-    	 $transactionStatus  = new stdClass();
-    	 $transactionStatus->error = "";
-    	 // try a file_get verification
-    	 $opts = array(
-    			'http' => array(
-    					'method' => "GET",
-    					'header' => "Authorization: Bearer " . $secret_key
-    			)
-    		);
+		// try a file_get verification
+		$opts = array(
+			'http' => array(
+				'method' => "GET",
+				'header' => "Authorization: Bearer " . $secret_key
+			)
+		);
 
-    		$context  = stream_context_create($opts);
-    		$url      = "https://api.paystack.co/transaction/verify/" . $transactionid;
-    		$response = file_get_contents($url, false, $context);
+		$context  = stream_context_create($opts);
+		$url      = "https://api.paystack.co/transaction/verify/" . $transactionid;
+		$response = file_get_contents($url, false, $context);
 
-    		// if file_get didn't work, try curl
-    		if (!$response) {
-    		    $ch = curl_init();
+		// if file_get didn't work, try curl
+		if (!$response) {
+			$ch = curl_init();
 
-    			curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/verify/" . $transactionid);
-    			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    					'Authorization: Bearer ' . $secret_key
-    			));
-    			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    			curl_setopt($ch, CURLOPT_HEADER, false);
+			curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/verify/" . $transactionid);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+				'Authorization: Bearer ' . $secret_key
+			));
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($ch, CURLOPT_HEADER, false);
 
-    			// Make sure CURL_SSLVERSION_TLSv1_2 is defined as 6
-    			// cURL must be able to use TLSv1.2 to connect
-    			// to Paystack servers
-    			if (!defined('CURL_SSLVERSION_TLSv1_2')) {
-    					define('CURL_SSLVERSION_TLSv1_2', 6);
-    			}
-    			curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-    			// exec the cURL
-    			$response = curl_exec($ch);
-    			// should be 0
-    			if (curl_errno($ch)) {
-    					// curl ended with an error
-    					$transactionStatus->error = "cURL said:" . curl_error($ch);
-    			}
-    			//close connection
-    			curl_close($ch);
+			// Make sure CURL_SSLVERSION_TLSv1_2 is defined as 6
+			// cURL must be able to use TLSv1.2 to connect
+			// to Paystack servers
+			if (!defined('CURL_SSLVERSION_TLSv1_2')) {
+				define('CURL_SSLVERSION_TLSv1_2', 6);
+			}
+			curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+			// exec the cURL
+			$response = curl_exec($ch);
+			// should be 0
+			if (curl_errno($ch)) {
+				// curl ended with an error
+				$transactionStatus->error = "cURL said:" . curl_error($ch);
+			}
+			//close connection
+			curl_close($ch);
     	}
 
     	if ($response)
@@ -431,14 +447,14 @@ JS;
     	switch($pddpinfo->pmode)
     	{
     		case 0: //its in test mode
-    			$pddpinfo->secret_key = $this->params->get('ppdp_test_secret_key');
-    			$pddpinfo->public_key = $this->params->get('ppdp_test_public_key'); break;
+    			$pddpinfo->secret_key = trim($this->params->get('ppdp_test_secret_key'));
+    			$pddpinfo->public_key = trim($this->params->get('ppdp_test_public_key')); break;
     		case 1://its live
-    			$pddpinfo->secret_key = $this->params->get('ppdp_live_secret_key');
-    			$pddpinfo->public_key = $this->params->get('ppdp_live_public_key'); break;
+    			$pddpinfo->secret_key = trim($this->params->get('ppdp_live_secret_key'));
+    			$pddpinfo->public_key = trim($this->params->get('ppdp_live_public_key')); break;
     		default: //its in test mode
-    			$pddpinfo->secret_key = $this->params->get('ppdp_test_secret_key');
-    			$pddpinfo->public_key = $this->params->get('ppdp_test_public_key'); break;
+    			$pddpinfo->secret_key = trim($this->params->get('ppdp_test_secret_key'));
+    			$pddpinfo->public_key = trim($this->params->get('ppdp_test_public_key')); break;
     	}
     	//$pddpinfo->notify_email = $this->params->get('notify_email', '');
 
@@ -450,7 +466,29 @@ JS;
     	return $pddpinfo;
     }
 
-    private function _loadTemplate($file = null, $variables = array())
+    protected function _getTaxPercentage()
+    {
+    	if (!isset(self::$tax_percentage)) {
+
+    		$db = JFactory::getDBO();
+
+    		$db->setQuery('SELECT tax_rate FROM #__payperdownloadplus_config');
+
+    		self::$tax_percentage = 0;
+    		try {
+    			$tax_percentage = $db->loadResult();
+    			if (!is_null($tax_percentage)) {
+    				self::$tax_percentage = $tax_percentage;
+    			}
+    		} catch (RuntimeException $e) {
+    			self::$tax_percentage = 0;
+    		}
+    	}
+
+    	return self::$tax_percentage;
+    }
+
+    protected function _loadTemplate($file = null, $variables = array())
     {
         $template = JFactory::getApplication()->getTemplate();
         $overridePath = JPATH_THEMES.'/'.$template.'/html/plg_payperdownloadplus_paystackpay';
